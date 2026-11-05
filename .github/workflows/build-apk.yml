@@ -1,4 +1,4 @@
-name: Build Livella APK
+name: Build Livella APK FIX
 
 on: [push, workflow_dispatch]
 
@@ -8,10 +8,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Unzip project if present
+      - name: Unzip project
         run: |
           if [ -f project.zip ]; then
-            echo "Trovato project.zip, estraggo..."
             unzip -o project.zip
             ls -la
           fi
@@ -23,14 +22,29 @@ jobs:
           java-version: '17'
 
       - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
+        run: |
+          ANDROID_SDK_ROOT=$HOME/android-sdk
+          mkdir -p $ANDROID_SDK_ROOT/cmdline-tools
+          cd $ANDROID_SDK_ROOT/cmdline-tools
+          wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O cmdline-tools.zip
+          unzip -q cmdline-tools.zip
+          mv cmdline-tools latest
+          rm cmdline-tools.zip
+          echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT" >> $GITHUB_ENV
+          echo "ANDROID_HOME=$ANDROID_SDK_ROOT" >> $GITHUB_ENV
+          echo "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$ANDROID_SDK_ROOT/platform-tools:$ANDROID_SDK_ROOT/build-tools/34.0.0" >> $GITHUB_PATH
+
+      - name: Install Android packages
+        run: |
+          yes | sdkmanager --licenses
+          sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
 
       - name: Build APK
         run: |
-          chmod +x gradlew || true
+          chmod +x gradlew
           ./gradlew assembleDebug --no-daemon || gradle assembleDebug --no-daemon
 
-      - name: Upload APK
+      - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: La-Livella-APK
@@ -40,7 +54,7 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           tag_name: v1.0-${{ github.run_number }}
-          name: La Livella APK v1.0
+          name: La Livella APK v1.0 Build ${{ github.run_number }}
           files: build/outputs/apk/debug/*.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
