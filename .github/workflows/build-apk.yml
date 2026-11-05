@@ -1,27 +1,52 @@
+name: Build Livella APK
 
-name: Build Livella LED No Vibra
-on: [push, workflow_dispatch]
+on:
+  push:
+  workflow_dispatch:
+
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - name: Unzip project
-        run: unzip -o project.zip
+        run: |
+          unzip -o project.zip
+          ls -la
+
       - name: Setup Java 17
         uses: actions/setup-java@v4
-        with: { distribution: 'temurin', java-version: '17' }
+        with:
+          distribution: temurin
+          java-version: 17
+
       - name: Setup Android SDK
         run: |
-          ANDROID_SDK_ROOT=$HOME/android-sdk; mkdir -p $ANDROID_SDK_ROOT/cmdline-tools; cd $ANDROID_SDK_ROOT/cmdline-tools; wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O cmdline-tools.zip; unzip -q cmdline-tools.zip; mv cmdline-tools latest; rm cmdline-tools.zip; echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT" >> $GITHUB_ENV; echo "ANDROID_HOME=$ANDROID_SDK_ROOT" >> $GITHUB_ENV; echo "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$ANDROID_SDK_ROOT/platform-tools" >> $GITHUB_PATH
-      - name: Install packages
-        run: yes | sdkmanager --licenses; sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
+          ANDROID_SDK_ROOT=$HOME/android-sdk
+          mkdir -p $ANDROID_SDK_ROOT/cmdline-tools
+          cd $ANDROID_SDK_ROOT/cmdline-tools
+          wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O cmdline-tools.zip
+          unzip -q cmdline-tools.zip
+          mv cmdline-tools latest
+          rm cmdline-tools.zip
+          echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT" >> $GITHUB_ENV
+          echo "ANDROID_HOME=$ANDROID_SDK_ROOT" >> $GITHUB_ENV
+          echo "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin" >> $GITHUB_PATH
+          echo "$ANDROID_SDK_ROOT/platform-tools" >> $GITHUB_PATH
+
+      - name: Install Android packages
+        run: |
+          yes | sdkmanager --licenses
+          sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
+
       - name: Build APK
-        run: chmod +x gradlew; ./gradlew assembleDebug --no-daemon
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon
+
       - name: Upload APK
         uses: actions/upload-artifact@v4
-        with: { name: La-Livella-LED-NoVibra-APK, path: build/outputs/apk/debug/*.apk }
-      - name: Release
-        uses: softprops/action-gh-release@v1
-        with: { tag_name: v4.0-${{ github.run_number }}, name: La Livella LED No Vibra v4.0, files: build/outputs/apk/debug/*.apk }
-        env: { GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} }
+        with:
+          name: La-Livella-APK
+          path: build/outputs/apk/debug/*.apk
