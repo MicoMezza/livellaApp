@@ -11,15 +11,18 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
+
       - name: Unzip project
         run: |
           unzip -o project.zip
           ls -la
+
       - name: Setup Java 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 17
+
       - name: Setup Android SDK
         run: |
           ANDROID_SDK_ROOT=$HOME/android-sdk
@@ -33,30 +36,29 @@ jobs:
           echo "ANDROID_HOME=$ANDROID_SDK_ROOT" >> $GITHUB_ENV
           echo "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin" >> $GITHUB_PATH
           echo "$ANDROID_SDK_ROOT/platform-tools" >> $GITHUB_PATH
+
       - name: Install packages
         run: |
           yes | sdkmanager --licenses
           sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
+
       - name: Build APK
         run: |
           chmod +x gradlew
           ./gradlew assembleDebug --no-daemon
+
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: La-Livella-LED-NoVibra-APK
           path: build/outputs/apk/debug/*.apk
+
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
           tag_name: v4.0-${{ github.run_number }}
-          name: La Livella LED No Vibra v4.0 Build ${{ github.run_number }}
-          body: |
-            Modifiche richieste:
-            - LED rosso/verde
-            - NO vibrazione
-            - Bip singolo quando entra in bolla
-            - Precisione 0.01° con x5 e x10
+          name: La Livella LED No Vibra v4.0
+          body: LED rosso verde, no vibrazione, bip singolo, precisione x10
           files: build/outputs/apk/debug/*.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
